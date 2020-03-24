@@ -98,6 +98,20 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 	}
 
 	// Start downloading
+	var sources []url.URL
+	var destinations []string
+	for _, resource := range resources {
+		resourceURI := *uri
+		resourceURI.Path = resource.Path
+		sources = append(sources, resourceURI)
+		destinations = append(destinations, path.Join(serverDirectory, resource.Path))
+	}
+
+	downloadProgress := make(chan int)
+	destinations, err := archive.DownloadBatch(sources, destinations, downloadProgress)
+	if err != nil {
+		return "", err
+	}
 
 	// Package all the destination files into a single ZIP
 
