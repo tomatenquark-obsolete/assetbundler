@@ -114,7 +114,7 @@ var Quotes = regexp.MustCompile(`^"(.*)"$`)
 
 // A resource is a tuple of the type of the resource (see Property) and it's path
 type Resource struct {
-	property, path string
+	Property, Path string
 }
 
 // Reads a map config file and returns all resources declared in the config
