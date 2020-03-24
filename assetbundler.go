@@ -48,6 +48,19 @@ func ParseConfig(source url.URL, destination string) ([]config.Resource, error) 
 	return resources, nil
 }
 
+// Takes a list of resources and returns the path of all exec type resources
+func FilterResourcesForExec(resources []config.Resource) []string {
+	var configs []string
+
+	for _, resource := range resources {
+		if resource.Property == "exec" {
+			configs = append(configs, resource.Path)
+		}
+	}
+	return configs
+}
+
+
 // Downloads a map from the given path to disk cache and returns a
 // path to a ZIP archive packaged with all the necessary contents.
 //export DownloadMap
@@ -64,7 +77,8 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 
 	// Gather all the resources from the map config file
 	var resources []config.Resource
-	configResources, err := ParseConfig(*uri, path.Join(serverDirectory, uri.Path))
+	var configResources []config.Resource
+	configResources, err = ParseConfig(*uri, path.Join(serverDirectory, path.Base(uri.Path)))
 	if err != nil {
 		return "", err
 	}
@@ -72,15 +86,15 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 
 	// Repeat this for all the configs until all resources have been aggregated
 	configs := make([]string, 0)
-
-	for _, resource := range resources {
-		if resource.Property == "exec" {
-			configs = append(configs, resource.Path)
-		}
-	}
+	configs = append(configs, FilterResourcesForExec(resources)...)
 
 	for len(configs) > 0 {
-
+		configPath, configs := configs[len(configs)-1], configs[:len(configs)-1]
+		configURI := *uri
+		configURI.Path = configPath
+		configResources, err = ParseConfig(configURI, path.Join(serverDirectory, configPath))
+		resources = append(resources, configResources...)
+		configs = append(configs, FilterResourcesForExec(resources)...)
 	}
 
 	// Start downloading
