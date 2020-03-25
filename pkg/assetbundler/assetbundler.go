@@ -1,5 +1,7 @@
 package main
 
+import "C"
+
 import (
 	"bufio"
 	"github.com/shibukawa/configdir"
@@ -103,6 +105,8 @@ func CollectResources(start url.URL, destinationDirectory string) ([]config.Reso
 	return resources, nil
 }
 
+// Downloads a map from the given path to disk cache and returns a
+// path to a ZIP archive packaged with all the necessary contents.
 //export DownloadMap
 func DownloadMap(source string) string {
 	// Verify that source is indeed a URL
