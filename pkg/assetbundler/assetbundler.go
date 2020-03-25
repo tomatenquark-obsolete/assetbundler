@@ -62,7 +62,7 @@ func FilterResourcesForExec(resources []config.Resource) []string {
 // Downloads a map from the given path to disk cache and returns a
 // path to a ZIP archive packaged with all the necessary contents.
 //export DownloadMap
-func DownloadMap(source string, progress func(int, int)) (string, error) {
+func DownloadMap(source string) (string, error) {
 	// Verify that source is indeed a URL
 	uri, err := url.Parse(source)
 	if err != nil {
@@ -119,5 +119,5 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 	}
 
 	// Return the path of the zip
-	return "", nil
+	return "/tmp/archive.zip", nil
 }
