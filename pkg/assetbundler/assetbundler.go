@@ -9,7 +9,18 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strings"
 )
+
+// Returns the index of a given resource
+func Index(vs []config.Resource, t config.Resource) int {
+	for i, v := range vs {
+		if v == t {
+			return i
+		}
+	}
+	return -1
+}
 
 // Downloads a config, filters it and writes it to the given destination.
 // Returns a list of resources used in the config file.
@@ -19,6 +30,7 @@ func ParseConfig(source url.URL, destination string) ([]config.Resource, error) 
 		return nil, err
 	}
 	tempFile.Close()
+	os.Remove(tempFile.Name())
 	tempPath, err := archive.DownloadFile(source, tempFile.Name())
 	if err != nil {
 		return nil, err
@@ -37,7 +49,8 @@ func ParseConfig(source url.URL, destination string) ([]config.Resource, error) 
 	if err != nil {
 		return nil, err
 	}
-	config, err := os.Open(destination)
+	os.MkdirAll(path.Dir(destination), os.ModePerm)
+	config, err := os.Create(destination)
 	if err != nil {
 		return nil, err
 	}
@@ -46,16 +59,48 @@ func ParseConfig(source url.URL, destination string) ([]config.Resource, error) 
 	return resources, nil
 }
 
-// Takes a list of resources and returns the path of all exec type resources
-func FilterResourcesForExec(resources []config.Resource) []string {
-	var configs []string
+// Takes a list of resources and returns all exec type resources
+func GetConfigs(resources []config.Resource) []config.Resource {
+	var configs []config.Resource
 
 	for _, resource := range resources {
 		if resource.Property == "exec" {
-			configs = append(configs, resource.Path)
+			configs = append(configs, resource)
 		}
 	}
 	return configs
+}
+
+// Downloads all the configs starting from "start" and returns a list of all the collected resources
+func CollectResources(start url.URL, destinationDirectory string) ([]config.Resource, error) {
+	var resources []config.Resource
+	var configResources []config.Resource
+	configResources, err := ParseConfig(start, path.Join(destinationDirectory, start.Path))
+	if err != nil {
+		return nil, err
+	}
+	resources = append(resources, configResources...)
+
+	configs := make([]config.Resource, 0)
+	configs = append(configs, GetConfigs(resources)...)
+
+	// Repeat for all the configs until all resources have been aggregated
+	for len(configs) > 0 {
+		// Pop element from configs
+		conf, configs := configs[len(configs)-1], configs[:len(configs)-1]
+		// Pop element from resources
+		resourceIndex := Index(resources, conf)
+		resources := append(resources[:resourceIndex], resources[resourceIndex+1:]...)
+
+		// Download config and evaluate it
+		configURI := start
+		configURI.Path = conf.Path
+		configResources, err = ParseConfig(configURI, path.Join(destinationDirectory, conf.Path))
+		resources = append(resources, configResources...)
+		configs = append(configs, GetConfigs(resources)...)
+	}
+
+	return resources, nil
 }
 
 
@@ -69,54 +114,46 @@ func DownloadMap(source string) (string, error) {
 		return "", err
 	}
 	// Use ~/tomatenquark/packages/servername to store packages
-	userDirectories := configdir.New("tomatenquark", "packages")
-	localDirectory := userDirectories.LocalPath
-	serverDirectory := path.Join(localDirectory, uri.Hostname())
-
+	configDirectories := configdir.New("tomatenquark", "")
+	userDirectories := configDirectories.QueryCacheFolder()
+	serverDirectory := path.Join(userDirectories.Path, uri.Hostname())
 	// Gather all the resources from the map config file
-	var resources []config.Resource
-	var configResources []config.Resource
-	configResources, err = ParseConfig(*uri, path.Join(serverDirectory, path.Base(uri.Path)))
+	resources, err := CollectResources(*uri, serverDirectory)
+	// Also add the map and waypoint as a download resources
+	resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", "ogz", 1))})
+	resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", "wpt", 1))})
 	if err != nil {
 		return "", err
 	}
-	resources = append(resources, configResources...)
-
-	// Repeat this for all the configs until all resources have been aggregated
-	configs := make([]string, 0)
-	configs = append(configs, FilterResourcesForExec(resources)...)
-
-	// TODO: This will execute all configs again and again =)
-	for len(configs) > 0 {
-		configPath, configs := configs[len(configs)-1], configs[:len(configs)-1]
-		configURI := *uri
-		configURI.Path = configPath
-		configResources, err = ParseConfig(configURI, path.Join(serverDirectory, configPath))
-		resources = append(resources, configResources...)
-		configs = append(configs, FilterResourcesForExec(resources)...)
-	}
 
 	// Start downloading
-	// TODO: Skip config files here!
 	var sources []url.URL
 	var destinations []string
 	for _, resource := range resources {
 		resourceURI := *uri
-		resourceURI.Path = resource.Path
+		var resourcePath string
+		switch resource.Property {
+		case "mmodel":
+			resourcePath = path.Join("models", resource.Path)
+		case "mapsound":
+			resourcePath = path.Join("sounds", resource.Path)
+		default:
+			resourcePath = resource.Path
+		}
+		resourceURI.Path = path.Join("packages", resourcePath)
 		sources = append(sources, resourceURI)
-		destinations = append(destinations, path.Join(serverDirectory, resource.Path))
+		destinations = append(destinations, path.Join(serverDirectory, path.Join("packages", resourcePath)))
 	}
 
-	downloadProgress := make(chan int)
-	_, err = archive.DownloadBatch(sources, destinations, downloadProgress)
+	_, err = archive.DownloadBatch(sources, destinations)
 	if err != nil {
 		return "", err
 	}
 
 	// Package all the destination files into a single ZIP
-	if err := archive.ZipFiles("/tmp/archive.zip", destinations); err != nil {
+	/*if err := archive.ZipFiles("/tmp/archive.zip", destinations); err != nil {
 		return "", err
-	}
+	}*/
 
 	// Return the path of the zip
 	return "/tmp/archive.zip", nil
