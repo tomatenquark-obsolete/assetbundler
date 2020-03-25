@@ -1,4 +1,4 @@
-package assetbundler
+package main
 
 import (
 	"bufio"
@@ -103,9 +103,6 @@ func CollectResources(start url.URL, destinationDirectory string) ([]config.Reso
 	return resources, nil
 }
 
-
-// Downloads a map from the given path to disk cache and returns a
-// path to a ZIP archive packaged with all the necessary contents.
 //export DownloadMap
 func DownloadMap(source string) string {
 	// Verify that source is indeed a URL
@@ -164,4 +161,10 @@ func DownloadMap(source string) string {
 
 	// Return the path of the zip
 	return tempFile.Name()
+}
+
+func main() {
+	argsWithoutProg := os.Args[1:]
+	url := argsWithoutProg[0]
+	DownloadMap(url)
 }
