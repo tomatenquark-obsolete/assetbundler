@@ -12,7 +12,6 @@ import (
 	"path"
 )
 
-
 // Downloads a config, filters it and writes it to the given destination.
 // Returns a list of resources used in the config file.
 func ParseConfig(source url.URL, destination string) ([]config.Resource, error) {
@@ -88,6 +87,7 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 	configs := make([]string, 0)
 	configs = append(configs, FilterResourcesForExec(resources)...)
 
+	// TODO: This will execute all configs again and again =)
 	for len(configs) > 0 {
 		configPath, configs := configs[len(configs)-1], configs[:len(configs)-1]
 		configURI := *uri
@@ -98,6 +98,7 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 	}
 
 	// Start downloading
+	// TODO: Skip config files here!
 	var sources []url.URL
 	var destinations []string
 	for _, resource := range resources {
@@ -108,12 +109,15 @@ func DownloadMap(source string, progress func(int, int)) (string, error) {
 	}
 
 	downloadProgress := make(chan int)
-	destinations, err := archive.DownloadBatch(sources, destinations, downloadProgress)
+	_, err = archive.DownloadBatch(sources, destinations, downloadProgress)
 	if err != nil {
 		return "", err
 	}
 
 	// Package all the destination files into a single ZIP
+	if err := archive.ZipFiles("/tmp/archive.zip", destinations); err != nil {
+		return "", err
+	}
 
 	// Return the path of the zip
 	return "", nil
