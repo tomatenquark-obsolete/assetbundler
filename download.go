@@ -9,9 +9,6 @@ import (
 func main() {
 	argsWithoutProg := os.Args[1:]
 	url := argsWithoutProg[0]
-	destination, err := assetbundler.DownloadMap(url)
-	if err != nil {
-		panic(err)
-	}
+	destination := assetbundler.DownloadMap(url)
 	fmt.Println(destination)
 }

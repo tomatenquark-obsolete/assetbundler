@@ -107,11 +107,11 @@ func CollectResources(start url.URL, destinationDirectory string) ([]config.Reso
 // Downloads a map from the given path to disk cache and returns a
 // path to a ZIP archive packaged with all the necessary contents.
 //export DownloadMap
-func DownloadMap(source string) (string, error) {
+func DownloadMap(source string) string {
 	// Verify that source is indeed a URL
 	uri, err := url.Parse(source)
 	if err != nil {
-		return "", err
+		return ""
 	}
 	// Use ~/tomatenquark/packages/servername to store packages
 	configDirectories := configdir.New("tomatenquark", "")
@@ -123,7 +123,7 @@ func DownloadMap(source string) (string, error) {
 	resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", "ogz", 1))})
 	resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", "wpt", 1))})
 	if err != nil {
-		return "", err
+		return ""
 	}
 
 	// Start downloading
@@ -147,14 +147,21 @@ func DownloadMap(source string) (string, error) {
 
 	_, err = archive.DownloadBatch(sources, destinations)
 	if err != nil {
-		return "", err
+		return ""
 	}
 
 	// Package all the destination files into a single ZIP
-	/*if err := archive.ZipFiles("/tmp/archive.zip", destinations); err != nil {
-		return "", err
-	}*/
+	tempFile, err := ioutil.TempFile("", "maparchive*.zip")
+	if err != nil {
+		return ""
+	}
+	tempFile.Close()
+	os.Remove(tempFile.Name())
+	destinations = append(destinations, path.Join(serverDirectory, uri.Path))
+	if err := archive.ZipFiles(tempFile.Name(), destinations, serverDirectory); err != nil {
+		return ""
+	}
 
 	// Return the path of the zip
-	return "/tmp/archive.zip", nil
+	return tempFile.Name()
 }
