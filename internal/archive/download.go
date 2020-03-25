@@ -13,13 +13,26 @@ func DownloadFile(source url.URL, destination string) (string, error) {
 		return "", err
 	}
 	client := grab.NewClient()
-	client.Do(request)
+	response := client.Do(request)
+
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	Loop:
+	for {
+		select {
+		case <-response.Done:
+			// download is complete
+			break Loop
+		}
+	}
+
 	return destination, nil
 }
 
-// Downloads a batch of files and reports to the progress channel the number of completed requests
+// Downloads a batch of files.
 // Returns a slice of destination paths
-func DownloadBatch(sources []url.URL, destinations []string, progress chan int) ([]string, error) {
+func DownloadBatch(sources []url.URL, destinations []string) ([]string, error) {
 	requests := make([]*grab.Request, 0)
 	client := grab.NewClient()
 
@@ -31,28 +44,15 @@ func DownloadBatch(sources []url.URL, destinations []string, progress chan int) 
 		requests = append(requests, request)
 	}
 
-	responses := make([]*grab.Response, 0)
 	responsesChannel := client.DoBatch(5, requests...)
-
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
 	for _ = range ticker.C {
-		completed := 0
-		response, done := <- responsesChannel
+		_, done := <- responsesChannel
 		if done {
-			completed = len(responses)
-			progress <- completed
 			break
-		} else {
-			responses = append(responses, response)
-			for _, response := range responses {
-				if response.IsComplete() {
-					completed++
-				}
-			}
 		}
-		progress <- completed
 	}
 
 	return destinations, nil
