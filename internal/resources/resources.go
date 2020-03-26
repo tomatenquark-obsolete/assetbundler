@@ -13,7 +13,7 @@ import (
 // Returns the index of a given resource
 func Index(vs []config.Resource, t config.Resource) int {
 	for i, v := range vs {
-		if v == t {
+		if v.Path == t.Path {
 			return i
 		}
 	}
@@ -74,22 +74,30 @@ func GetConfigs(resources []config.Resource) []config.Resource {
 func Collect(start url.URL, destinationDirectory string) ([]config.Resource, error) {
 	var resources []config.Resource
 	var configResources []config.Resource
-	configResources, err := ParseConfig(start, path.Join(destinationDirectory, start.Path))
+	var err error
+	configResources, err = ParseConfig(start, path.Join(destinationDirectory, start.Path))
 	if err != nil {
 		return nil, err
 	}
 	resources = append(resources, configResources...)
 
-	configs := make([]config.Resource, 0)
+	configs, processed := make([]config.Resource, 0), make([]config.Resource, 0)
 	configs = append(configs, GetConfigs(resources)...)
 
 	// Repeat for all the configs until all resources have been aggregated
 	for len(configs) > 0 {
 		// Pop element from configs
-		conf, configs := configs[len(configs)-1], configs[:len(configs)-1]
+		var conf config.Resource
+		conf, configs = configs[len(configs)-1], configs[:len(configs)-1]
+		// Never process a file twice
+		confIndex := Index(processed, conf)
+		if confIndex >= 0 {
+			continue;
+		}
+		processed = append(processed, conf)
 		// Pop element from resources
 		resourceIndex := Index(resources, conf)
-		resources := append(resources[:resourceIndex], resources[resourceIndex+1:]...)
+		resources = append(resources[:resourceIndex], resources[resourceIndex+1:]...)
 
 		// Download config and evaluate it
 		configURI := start
