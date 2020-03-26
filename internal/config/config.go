@@ -14,7 +14,7 @@ import (
 // Maps the relation between ICOMMAND and the parameters it takes (file path)
 var Properties = map[string]int{
 	"texture": 2,
-	"mmodel": 1,
+	"mmodelfile": 1,
 	"mapsound": 1,
 	"skybox": 1,
 	"exec": 1,
@@ -72,6 +72,7 @@ var Whitelist = []string{
 	"minimapcolour",
 	"minimapheight",
 	"mmodel",
+	"mmodelfile",
 	"setshader",
 	"setshaderparam",
 	"shadowmapambient",
