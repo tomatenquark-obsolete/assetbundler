@@ -139,8 +139,6 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 		resourceURI := *uri
 		var resourcePath string
 		switch resource.Property {
-		case "mmodel":
-			resourcePath = path.Join("models", resource.Path)
 		case "mapsound":
 			resourcePath = path.Join("sounds", resource.Path)
 		default:
