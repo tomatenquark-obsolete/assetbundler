@@ -124,8 +124,10 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 	// Gather all the resources from the map config file
 	resources, err := CollectResources(*uri, serverDirectory)
 	// Also add the map and waypoint as a download resources
-	resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", "ogz", 1))})
-	resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", "wpt", 1))})
+	mapFiles := []string{"ogz", "wpt", "jpg"}
+	for _, mapFile := range mapFiles {
+		resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
+	}
 	if err != nil {
 		return C.CString("")
 	}
