@@ -108,9 +108,11 @@ func CollectResources(start url.URL, destinationDirectory string) ([]config.Reso
 // Downloads a map from the given path to disk cache and returns a
 // path to a ZIP archive packaged with all the necessary contents.
 //export DownloadMap
-func DownloadMap(source string) *C.char {
+func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 	// Verify that source is indeed a URL
-	uri, err := url.Parse(source)
+	serverContent := C.GoString(servercontent)
+	mapString := C.GoString(servermap)
+	uri, err := url.Parse(path.Join(serverContent, "packages", mapString, ".cfg"))
 	if err != nil {
 		return C.CString("")
 	}
@@ -169,6 +171,8 @@ func DownloadMap(source string) *C.char {
 
 func main() {
 	argsWithoutProg := os.Args[1:]
-	url := argsWithoutProg[0]
-	DownloadMap(url)
+	host, serverMap := argsWithoutProg[0], argsWithoutProg[1]
+	safeHost := C.CString(host)
+	safeServerMap := C.CString(serverMap)
+	DownloadMap(safeHost, safeServerMap)
 }
