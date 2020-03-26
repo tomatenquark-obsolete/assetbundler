@@ -4,6 +4,7 @@ import "C"
 
 import (
 	"fmt"
+	"github.com/cavaliercoder/grab"
 	"github.com/shibukawa/configdir"
 	"github.com/tomatenquark/assetbundler/internal/archive"
 	"github.com/tomatenquark/assetbundler/internal/config"
@@ -13,12 +14,55 @@ import (
 	"os"
 	"path"
 	"strings"
+	"time"
 )
 
-// Downloads a map from the given path to disk cache and returns a
-// path to a ZIP archive packaged with all the necessary contents.
-//export DownloadMap
-func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
+// Defines the status of the download
+const (
+	CONNECTION_ABORTED = -1
+	IN_PROGRESS = iota
+	FINISHED = iota
+)
+
+var downloads = make(map[string]int)
+
+// Downloads a batch of files.
+// Returns a slice of destination paths
+func DownloadResourcesAndArchive(sources []url.URL, destinations []string, zipPath string, serverDirectory string) {
+	requests := make([]*grab.Request, 0)
+	client := grab.NewClient()
+
+	for index, source := range sources {
+		request, _ := grab.NewRequest(destinations[index], source.String())
+		requests = append(requests, request)
+	}
+
+	responsesChannel := client.DoBatch(5, requests...)
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+
+	for _ = range ticker.C {
+		_, done := <- responsesChannel
+		if done {
+			break
+		}
+	}
+	err := archive.ZipFiles(zipPath, destinations, serverDirectory)
+	if err != nil {
+		downloads[zipPath] = CONNECTION_ABORTED
+	}
+	downloads[zipPath] = FINISHED
+}
+
+// Starts a download for the given map from servercontent.
+// Returns the destination of the resulting archive.
+//export StartDownload
+func StartDownload(servercontent *C.char, servermap *C.char) *C.char {
+	// Create a temporary archive for the download
+	tempFile, _ := ioutil.TempFile("", "maparchive*.zip")
+	tempFile.Close()
+	os.Remove(tempFile.Name())
+
 	// Verify that source is indeed a URL
 	serverContent := C.GoString(servercontent)
 	mapString := C.GoString(servermap)
@@ -30,21 +74,24 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 	configDirectories := configdir.New("tomatenquark", "")
 	userDirectories := configDirectories.QueryCacheFolder()
 	serverDirectory := path.Join(userDirectories.Path, uri.Hostname())
+
 	// Gather all the resources from the map config file
-	resources, err := resources.Collect(*uri, serverDirectory)
-	// Also add the map and waypoint as a download resources
-	mapFiles := []string{"ogz", "wpt", "jpg"}
-	for _, mapFile := range mapFiles {
-		resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
-	}
+	res, err := resources.Collect(*uri, serverDirectory)
 	if err != nil {
+		downloads[tempFile.Name()] = CONNECTION_ABORTED
 		return C.CString("")
 	}
 
-	// Start downloading
+	// Add additional map resources
+	mapFiles := []string{"ogz", "wpt", "jpg"}
+	for _, mapFile := range mapFiles {
+		res = append(res, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
+	}
+
+	// Prepare download list
 	var sources []url.URL
 	var destinations []string
-	for _, resource := range resources {
+	for _, resource := range res {
 		resourceURI := *uri
 		var resourcePath string
 		switch resource.Property {
@@ -58,31 +105,18 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 		destinations = append(destinations, path.Join(serverDirectory, path.Join("packages", resourcePath)))
 	}
 
-	_, err = archive.DownloadBatch(sources, destinations)
-	if err != nil {
-		return C.CString("")
-	}
-
-	// Package all the destination files into a single ZIP
-	tempFile, err := ioutil.TempFile("", "maparchive*.zip")
-	if err != nil {
-		return C.CString("")
-	}
-	tempFile.Close()
-	os.Remove(tempFile.Name())
+	// Dispatch download
 	destinations = append(destinations, path.Join(serverDirectory, uri.Path))
-	if err := archive.ZipFiles(tempFile.Name(), destinations, serverDirectory); err != nil {
-		return C.CString("")
-	}
-
-	// Return the path of the zip
+	downloads[tempFile.Name()] = IN_PROGRESS
+	go DownloadResourcesAndArchive(sources, destinations, tempFile.Name(), serverDirectory)
 	return C.CString(tempFile.Name())
 }
 
-func main() {
-	argsWithoutProg := os.Args[1:]
-	host, serverMap := argsWithoutProg[0], argsWithoutProg[1]
-	safeHost := C.CString(host)
-	safeServerMap := C.CString(serverMap)
-	DownloadMap(safeHost, safeServerMap)
+// Returns the status of the download
+//export GetStatus
+func GetStatus(zipPath *C.char) C.int {
+	safeZipPath := C.GoString(zipPath)
+	return C.int(downloads[safeZipPath])
 }
+
+func main() {}
