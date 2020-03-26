@@ -16,13 +16,11 @@ import (
 
 // Downloads a map from the given path to disk cache and returns a
 // path to a ZIP archive packaged with all the necessary contents.
-func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
+func DownloadMap(servercontent string, servermap string) string {
 	// Verify that source is indeed a URL
-	serverContent := C.GoString(servercontent)
-	mapString := C.GoString(servermap)
-	uri, err := url.Parse(fmt.Sprint(serverContent, "/packages/base/", mapString, ".cfg"))
+	uri, err := url.Parse(fmt.Sprint(servercontent, "/packages/base/", servermap, ".cfg"))
 	if err != nil {
-		return C.CString("")
+		return ""
 	}
 	// Use ~/tomatenquark/packages/servername to store packages
 	configDirectories := configdir.New("tomatenquark", "")
@@ -36,7 +34,7 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 		resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
 	}
 	if err != nil {
-		return C.CString("")
+		return ""
 	}
 
 	// Start downloading
@@ -58,29 +56,28 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 
 	_, err = archive.DownloadBatch(sources, destinations)
 	if err != nil {
-		return C.CString("")
+		return ""
 	}
 
 	// Package all the destination files into a single ZIP
 	tempFile, err := ioutil.TempFile("", "maparchive*.zip")
 	if err != nil {
-		return C.CString("")
+		return ""
 	}
 	tempFile.Close()
 	os.Remove(tempFile.Name())
 	destinations = append(destinations, path.Join(serverDirectory, uri.Path))
 	if err := archive.ZipFiles(tempFile.Name(), destinations, serverDirectory); err != nil {
-		return C.CString("")
+		return ""
 	}
 
 	// Return the path of the zip
-	return C.CString(tempFile.Name())
+	return tempFile.Name()
 }
 
 func main() {
 	argsWithoutProg := os.Args[1:]
 	host, serverMap := argsWithoutProg[0], argsWithoutProg[1]
-	safeHost := C.CString(host)
-	safeServerMap := C.CString(serverMap)
-	DownloadMap(safeHost, safeServerMap)
+	archivePath := DownloadMap(host, serverMap)
+	fmt.Println(archivePath)
 }
