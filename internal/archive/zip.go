@@ -2,6 +2,7 @@ package archive
 
 import (
 	"archive/zip"
+	"fmt"
 	"io"
 	"os"
 	"strings"
@@ -25,7 +26,8 @@ func ZipFiles(filename string, files []string, prefix string) error {
 	// Add files to zip
 	for _, file := range files {
 		if err = AddFileToZip(zipWriter, file, prefix); err != nil {
-			return err
+			fmt.Println(err)
+			//return err //TODO: Better error handling / logging
 		}
 	}
 	return nil
