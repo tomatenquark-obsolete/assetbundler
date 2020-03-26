@@ -4,6 +4,7 @@ import "C"
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/shibukawa/configdir"
 	"github.com/tomatenquark/assetbundler/internal/archive"
 	"github.com/tomatenquark/assetbundler/internal/config"
@@ -112,7 +113,7 @@ func DownloadMap(servercontent *C.char, servermap *C.char) *C.char {
 	// Verify that source is indeed a URL
 	serverContent := C.GoString(servercontent)
 	mapString := C.GoString(servermap)
-	uri, err := url.Parse(path.Join(serverContent, "packages", mapString, ".cfg"))
+	uri, err := url.Parse(fmt.Sprint(serverContent, "/packages/base/", mapString, ".cfg"))
 	if err != nil {
 		return C.CString("")
 	}
