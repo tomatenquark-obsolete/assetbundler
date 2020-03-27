@@ -2,12 +2,14 @@ package resources
 
 import (
 	"bufio"
+	"fmt"
 	"github.com/tomatenquark/assetbundler/internal/archive"
 	"github.com/tomatenquark/assetbundler/internal/config"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
+	"strings"
 )
 
 // Returns the index of a given resource
@@ -75,7 +77,8 @@ func Collect(start url.URL, destinationDirectory string) ([]config.Resource, err
 	var resources []config.Resource
 	var configResources []config.Resource
 	var err error
-	configResources, err = ParseConfig(start, path.Join(destinationDirectory, start.Path))
+	configPath := fmt.Sprint("packages/base/", path.Base(start.Path))
+	configResources, err = ParseConfig(start, path.Join(destinationDirectory, configPath))
 	if err != nil {
 		return nil, err
 	}
@@ -101,8 +104,9 @@ func Collect(start url.URL, destinationDirectory string) ([]config.Resource, err
 
 		// Download config and evaluate it
 		configURI := start
-		configURI.Path = conf.Path
-		configResources, err = ParseConfig(configURI, path.Join(destinationDirectory, conf.Path))
+		configURI.Path = strings.Replace(configURI.Path, configPath, conf.Path, 1)
+		confPath := path.Join(destinationDirectory, conf.Path)
+		configResources, err = ParseConfig(configURI, confPath)
 		resources = append(resources, configResources...)
 		configs = append(configs, GetConfigs(resources)...)
 	}
