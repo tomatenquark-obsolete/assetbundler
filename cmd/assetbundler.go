@@ -18,14 +18,17 @@ import (
 // path to a ZIP archive packaged with all the necessary contents.
 func DownloadMap(servercontent string, servermap string) string {
 	// Verify that source is indeed a URL
-	uri, err := url.Parse(fmt.Sprint(servercontent, "/packages/base/", servermap, ".cfg"))
+	configPath := fmt.Sprint("/packages/base/", servermap, ".cfg")
+	uri, err := url.Parse(fmt.Sprint(servercontent, configPath))
 	if err != nil {
 		return ""
 	}
 	// Use ~/tomatenquark/packages/servername to store packages
 	configDirectories := configdir.New("tomatenquark", "")
 	userDirectories := configDirectories.QueryCacheFolder()
-	serverDirectory := path.Join(userDirectories.Path, uri.Hostname())
+	hostIndex := strings.Index(uri.String(), uri.Hostname())
+	configIndex := strings.Index(uri.String(), configPath)
+	serverDirectory := path.Join(userDirectories.Path, uri.String()[hostIndex:configIndex])
 	// Gather all the resources from the map config file
 	resources, err := resources.Collect(*uri, serverDirectory)
 	// Also add the map and waypoint as a download resources
@@ -49,9 +52,9 @@ func DownloadMap(servercontent string, servermap string) string {
 		default:
 			resourcePath = resource.Path
 		}
-		resourceURI.Path = path.Join("packages", resourcePath)
+		resourceURI.Path = strings.Replace(resourceURI.Path, configPath, fmt.Sprint("/packages/", resourcePath), 1)
 		sources = append(sources, resourceURI)
-		destinations = append(destinations, path.Join(serverDirectory, path.Join("packages", resourcePath)))
+		destinations = append(destinations, path.Join(serverDirectory, path.Join("packages/", resourcePath)))
 	}
 
 	_, err = archive.DownloadBatch(sources, destinations)
