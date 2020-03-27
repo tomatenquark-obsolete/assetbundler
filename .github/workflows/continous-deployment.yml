@@ -28,9 +28,12 @@ jobs:
         with:
           go-version: '^1.13.1'
       - name: Build for Windows
-        run:  go build -o libassetbundler.dll -buildmode=c-shared ./pkg/assetbundler
+        run:  |
+          go build -o libassetbundler_x64.dll -buildmode=c-shared ./pkg/assetbundler
+          set GOARCH=386
+          go build -o libassetbundler_x86.dll -buildmode=c-shared ./pkg/assetbundler
       - name: Archive Windows binaries
-        run: Compress-Archive -Path .\libassetbundler.dll, .\libassetbundler.h -DestinationPath assetbundler_windows.zip
+        run: Compress-Archive -Path .\libassetbundler_x64.dll, .\libassetbundler_x86.dll, .\libassetbundler.h -DestinationPath assetbundler_windows.zip
       - uses: actions/upload-artifact@v1
         with: 
           name: assetbundler_windows
