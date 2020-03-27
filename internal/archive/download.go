@@ -49,14 +49,11 @@ func DownloadBatch(sources []url.URL, destinations []string) ([]string, error) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	for _ = range ticker.C {
-		j, more := <- responsesChannel
-		if more {
-			fmt.Println("received job", j)
-		} else {
-			fmt.Println("received all jobs")
-			break
-		}
+	for resp := range responsesChannel {
+		/*if err := resp.Err(); err != nil {
+			panic(err)
+		}*/
+		fmt.Printf("Downloaded %s to %s\n", resp.Request.URL(), resp.Filename)
 	}
 
 	return destinations, nil
