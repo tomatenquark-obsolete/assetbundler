@@ -48,6 +48,7 @@ func DownloadResourcesAndArchive(sources []url.URL, destinations []string, zipPa
 		fmt.Printf("Downloaded %s to %s\n", resp.Request.URL(), resp.Filename)
 	}
 
+	destinations = append(destinations, strings.Replace(destinations[len(destinations)-1], "jpg", "cfg", 1))
 	err := archive.ZipFiles(zipPath, destinations, serverDirectory)
 	if err != nil {
 		downloads[zipPath] = CONNECTION_ABORTED
@@ -110,7 +111,6 @@ func StartDownload(servercontent *C.char, servermap *C.char) *C.char {
 	}
 
 	// Dispatch download
-	destinations = append(destinations, path.Join(serverDirectory, uri.Path))
 	downloads[tempFile.Name()] = IN_PROGRESS
 	go DownloadResourcesAndArchive(sources, destinations, tempFile.Name(), serverDirectory)
 	return C.CString(tempFile.Name())
