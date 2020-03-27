@@ -1,4 +1,4 @@
-name: Continous integration for Tomatenquark
+name: Continous integration for assetbundler
 on: [push]
 
 jobs:
@@ -19,7 +19,7 @@ jobs:
         with:
           go-version: '^1.13.1'
       - name: Build for Windows
-        run:  go build -o libassetbundler.dylib -buildmode=c-shared ./pkg/assetbundler
+        run:  go build -o libassetbundler.dll -buildmode=c-shared ./pkg/assetbundler
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
@@ -28,4 +28,4 @@ jobs:
         with:
           go-version: '^1.13.1'
       - name: Build for Ubuntu
-        run: go build -o libassetbundler.dylib -buildmode=c-shared ./pkg/assetbundler
+        run: go build -o libassetbundler.so -buildmode=c-shared ./pkg/assetbundler
