@@ -24,5 +24,5 @@ This is a quite obvious choice when you think about it:
 ```
 git clone https://github.com/tomatenquark/assetbundler.git`
 cd assetbundler/
-go build -o libassetbundler.[so|dylib|dll] -buildmode=c-shared pkg/assetbundler/assetbundler.go # given you have a recent version of go installed
+go build -o libassetbundler.[so|dylib|dll] -buildmode=c-shared pkg/assetbundler # given you have a recent version of go installed
 ```
