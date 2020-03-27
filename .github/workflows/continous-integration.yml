@@ -9,10 +9,7 @@ jobs:
         with:
           go-version: '^1.13.1'
       - name: Build for OSX
-        run: |
-          go get github.com/shibukawa/configdir
-          go get github.com/cavaliercoder/grab
-          go build -o libassetbundler.dylib -buildmode=c-shared github.com/tomatenquark/assetbundler
+        run: go build -o libassetbundler.dylib -buildmode=c-shared github.com/tomatenquark/assetbundler/pkg/assetbundler
   build-windows:
     runs-on: windows-latest
     steps:
@@ -20,10 +17,7 @@ jobs:
         with:
           go-version: '^1.13.1'
       - name: Build for Windows
-        run: |
-          go get github.com/shibukawa/configdir
-          go get github.com/cavaliercoder/grab
-          go build -o libassetbundler.dylib -buildmode=c-shared github.com/tomatenquark/assetbundler
+        run:  go build -o libassetbundler.dylib -buildmode=c-shared github.com/tomatenquark/assetbundler/pkg/assetbundler
   build-ubuntu:
     runs-on: ubuntu-latest
     steps:
@@ -31,7 +25,4 @@ jobs:
         with:
           go-version: '^1.13.1'
       - name: Build for Ubuntu
-        run: |
-          go get github.com/shibukawa/configdir
-          go get github.com/cavaliercoder/grab
-          go build -o libassetbundler.dylib -buildmode=c-shared github.com/tomatenquark/assetbundler
+        run: go build -o libassetbundler.dylib -buildmode=c-shared github.com/tomatenquark/assetbundler/pkg/assetbundler
