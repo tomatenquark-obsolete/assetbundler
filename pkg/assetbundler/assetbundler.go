@@ -41,12 +41,13 @@ func DownloadResourcesAndArchive(sources []url.URL, destinations []string, zipPa
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	for _ = range ticker.C {
-		_, done := <- responsesChannel
-		if done {
-			break
-		}
+	for resp := range responsesChannel {
+		/*if err := resp.Err(); err != nil {
+			panic(err)
+		}*/
+		fmt.Printf("Downloaded %s to %s\n", resp.Request.URL(), resp.Filename)
 	}
+
 	err := archive.ZipFiles(zipPath, destinations, serverDirectory)
 	if err != nil {
 		downloads[zipPath] = CONNECTION_ABORTED
