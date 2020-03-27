@@ -69,7 +69,7 @@ func DownloadMap(servercontent string, servermap string) string {
 	}
 	tempFile.Close()
 	os.Remove(tempFile.Name())
-	destinations = append(destinations, path.Join(serverDirectory, uri.Path))
+	destinations = append(destinations, path.Join(serverDirectory, configPath))
 	if err := archive.ZipFiles(tempFile.Name(), destinations, serverDirectory); err != nil {
 		return ""
 	}
