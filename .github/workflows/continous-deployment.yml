@@ -33,7 +33,7 @@ jobs:
           set GOARCH=386
           go build -o libassetbundler_x86.dll -buildmode=c-shared ./pkg/assetbundler
       - name: Archive Windows binaries
-        run: Compress-Archive -Path .\libassetbundler_x64.dll, .\libassetbundler_x86.dll, .\libassetbundler.h -DestinationPath assetbundler_windows.zip
+        run: Compress-Archive -Path .\libassetbundler_x64.dll, .\libassetbundler_x86.dll, .\libassetbundler_x64.h, .\libassetbundler_x86.h -DestinationPath assetbundler_windows.zip
       - uses: actions/upload-artifact@v1
         with: 
           name: assetbundler_windows
