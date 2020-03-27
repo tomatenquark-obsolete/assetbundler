@@ -66,14 +66,17 @@ func StartDownload(servercontent *C.char, servermap *C.char) *C.char {
 	// Verify that source is indeed a URL
 	serverContent := C.GoString(servercontent)
 	mapString := C.GoString(servermap)
-	uri, err := url.Parse(fmt.Sprint(serverContent, "/packages/base/", mapString, ".cfg"))
+	configPath := fmt.Sprint("/packages/base/", mapString, ".cfg")
+	uri, err := url.Parse(fmt.Sprint(serverContent, configPath))
 	if err != nil {
 		return C.CString("")
 	}
 	// Use ~/tomatenquark/packages/servername to store packages
 	configDirectories := configdir.New("tomatenquark", "")
 	userDirectories := configDirectories.QueryCacheFolder()
-	serverDirectory := path.Join(userDirectories.Path, uri.Hostname())
+	hostIndex := strings.Index(uri.String(), uri.Hostname())
+	configIndex := strings.Index(uri.String(), configPath)
+	serverDirectory := path.Join(userDirectories.Path, uri.String()[hostIndex:configIndex])
 
 	// Gather all the resources from the map config file
 	res, err := resources.Collect(*uri, serverDirectory)
@@ -100,7 +103,7 @@ func StartDownload(servercontent *C.char, servermap *C.char) *C.char {
 		default:
 			resourcePath = resource.Path
 		}
-		resourceURI.Path = path.Join("packages", resourcePath)
+		resourceURI.Path = strings.Replace(resourceURI.Path, configPath, fmt.Sprint("/packages/", resourcePath), 1)
 		sources = append(sources, resourceURI)
 		destinations = append(destinations, path.Join(serverDirectory, path.Join("packages", resourcePath)))
 	}
