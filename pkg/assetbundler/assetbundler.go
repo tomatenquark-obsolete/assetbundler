@@ -4,24 +4,26 @@ import "C"
 
 import (
 	"fmt"
-	"github.com/cavaliercoder/grab"
-	"github.com/shibukawa/configdir"
-	"github.com/tomatenquark/assetbundler/internal/archive"
-	"github.com/tomatenquark/assetbundler/internal/config"
-	"github.com/tomatenquark/assetbundler/internal/resources"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
 	"strings"
 	"time"
+
+	"github.com/cavaliercoder/grab"
+	"github.com/shibukawa/configdir"
+
+	"github.com/tomatenquark/assetbundler/internal/archive"
+	"github.com/tomatenquark/assetbundler/internal/config"
+	"github.com/tomatenquark/assetbundler/internal/resources"
 )
 
 // Defines the status of the download
 const (
 	CONNECTION_ABORTED = -1
-	IN_PROGRESS = iota
-	FINISHED = iota
+	IN_PROGRESS        = iota
+	FINISHED           = iota
 )
 
 var downloads = make(map[string]int)
@@ -90,7 +92,7 @@ func StartDownload(servercontent *C.char, servermap *C.char) *C.char {
 	// Add additional map resources
 	mapFiles := []string{"ogz", "wpt", "jpg"}
 	for _, mapFile := range mapFiles {
-		res = append(res, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
+		res = append(res, config.FileToLoad{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
 	}
 
 	// Prepare download list
@@ -99,7 +101,7 @@ func StartDownload(servercontent *C.char, servermap *C.char) *C.char {
 	for _, resource := range res {
 		resourceURI := *uri
 		var resourcePath string
-		switch resource.Property {
+		switch resource.Command {
 		case "mapsound":
 			resourcePath = path.Join("sounds", resource.Path)
 		default:
