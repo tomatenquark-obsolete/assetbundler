@@ -3,15 +3,17 @@ package main
 import "C"
 import (
 	"fmt"
-	"github.com/shibukawa/configdir"
-	"github.com/tomatenquark/assetbundler/internal/archive"
-	"github.com/tomatenquark/assetbundler/internal/config"
-	"github.com/tomatenquark/assetbundler/internal/resources"
 	"io/ioutil"
 	"net/url"
 	"os"
 	"path"
 	"strings"
+
+	"github.com/shibukawa/configdir"
+
+	"github.com/tomatenquark/assetbundler/internal/archive"
+	"github.com/tomatenquark/assetbundler/internal/config"
+	"github.com/tomatenquark/assetbundler/internal/resources"
 )
 
 // Downloads a map from the given path to disk cache and returns a
@@ -34,7 +36,7 @@ func DownloadMap(servercontent string, servermap string) string {
 	// Also add the map and waypoint as a download resources
 	mapFiles := []string{"ogz", "wpt", "jpg"}
 	for _, mapFile := range mapFiles {
-		resources = append(resources, config.Resource{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
+		resources = append(resources, config.FileToLoad{"map", path.Join("base", strings.Replace(path.Base(uri.Path), "cfg", mapFile, 1))})
 	}
 	if err != nil {
 		return ""
@@ -46,7 +48,7 @@ func DownloadMap(servercontent string, servermap string) string {
 	for _, resource := range resources {
 		resourceURI := *uri
 		var resourcePath string
-		switch resource.Property {
+		switch resource.Command {
 		case "mapsound":
 			resourcePath = path.Join("sounds", resource.Path)
 		default:

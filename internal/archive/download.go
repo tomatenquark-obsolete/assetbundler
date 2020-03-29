@@ -2,9 +2,10 @@ package archive
 
 import (
 	"fmt"
-	"github.com/cavaliercoder/grab"
 	"net/url"
 	"time"
+
+	"github.com/cavaliercoder/grab"
 )
 
 // Downloads a single file and returns the destination path
@@ -19,7 +20,7 @@ func DownloadFile(source url.URL, destination string) (string, error) {
 	ticker := time.NewTicker(500 * time.Millisecond)
 	defer ticker.Stop()
 
-	Loop:
+Loop:
 	for {
 		select {
 		case <-response.Done:
